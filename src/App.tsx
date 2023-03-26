@@ -1,7 +1,10 @@
-import React, { useCallback } from 'react'
-import styled from 'styled-components'
-import { Button, Title } from '@gnosis.pm/safe-react-components'
-import { useSafeAppsSDK } from '@gnosis.pm/safe-apps-react-sdk'
+import React, {useState} from 'react';
+import styled from 'styled-components';
+import { Title } from '@gnosis.pm/safe-react-components';
+import { useSafeAppsSDK} from '@gnosis.pm/safe-apps-react-sdk';
+import addresses from "./addresses";
+// import BigNumber from 'bignumber.js';
+import { AddressInput, TextFieldInput, Button } from '@gnosis.pm/safe-react-components';
 
 const Container = styled.div`
   padding: 1rem;
@@ -11,47 +14,121 @@ const Container = styled.div`
   justify-content: center;
   align-items: center;
   flex-direction: column;
-`
+`;
 
-const Link = styled.a`
-  margin-top: 8px;
+const FormBox = styled.div`
+  padding: 1 rem;
 `
+type Recipient = {address: string, amount: number};
 
 const SafeApp = (): React.ReactElement => {
-  const { sdk, safe } = useSafeAppsSDK()
+  const [recipients, setRecipients] = useState<Array<Recipient>>([]);
+  const [newRecipientAddress, setNewRecipientAddress] = useState<string>('');
+  const [newRecipientAmount, setNewRecipientAmount] = useState<number>(0);
+  const { sdk, safe } = useSafeAppsSDK();
+  const [ lockTime, setLockTime ] = useState<number>(0);
+  console.log(safe)
+  console.log(sdk)
 
-  const submitTx = useCallback(async () => {
-    try {
-      const { safeTxHash } = await sdk.txs.send({
-        txs: [
-          {
-            to: safe.safeAddress,
-            value: '0',
-            data: '0x',
-          },
-        ],
-      })
-      console.log({ safeTxHash })
-      const safeTx = await sdk.txs.getBySafeTxHash(safeTxHash)
-      console.log({ safeTx })
-    } catch (e) {
-      console.error(e)
-    }
-  }, [safe, sdk])
+  function appendRecipient(r: Recipient){
+    setRecipients([...recipients, r]);
+    setNewRecipientAmount(0);
+    setNewRecipientAddress('');
+  }
+
+  if(safe.chainId !== 5) {
+    return <Title size="xl"> Unsupported network, this only works on goerli </Title>
+  }
+  const goerli = addresses['5'];
 
   return (
     <Container>
-      <Title size="md">Safe: {safe.safeAddress}</Title>
-
-      <Button size="lg" color="primary" onClick={submitTx}>
-        Click to send a test transaction
-      </Button>
-
-      <Link href="https://github.com/gnosis/safe-apps-sdk" target="_blank" rel="noreferrer">
-        Documentation
-      </Link>
+      <Title size="lg">Create batch of token streams: </Title>
+      <div>
+        <Title size="sm">using safe: {safe.safeAddress}</Title>
+        <Title size="sm">network: {safe.chainId}</Title>
+      </div>
+      <FormBox>
+        <Row>
+          <AddressInput
+            label="ZoraActions"
+            name="actions contract"
+            address={goerli.zoraActions}
+            onChangeAddress={function(){/*noop*/}}
+            disabled
+          />
+        </Row>
+        <Row>
+          <AddressInput
+            label="Strategy"
+            name="strategy for all the streams"
+            address={goerli.linearStrategy}
+            onChangeAddress={function(){/*noop*/}}
+            disabled
+          />
+        </Row>
+        <Row>
+          <TextFieldInput
+            id="lockTime"
+            name="lockTime"
+            label="lock time (days)"
+            type="number"
+            onChange={e => setLockTime(parseInt(e.target.value))}
+            value={lockTime}
+          />
+        </Row>
+        {recipients.map(RecipientRow)}
+        <div style={{display: 'flex', alignItems: 'center', padding: '1em 0' }}>
+          <AddressInput
+            label="recipient"
+            name="stream recipient"
+            address={newRecipientAddress}
+            onChangeAddress={e =>{setNewRecipientAddress(e)}}
+          />
+          <TextFieldInput
+            id="amount"
+            name="amount"
+            label="amount"
+            type="number"
+            onChange={e =>{setNewRecipientAmount(parseInt(e.target.value))}}
+            value={newRecipientAmount}
+            />
+          <Button
+            onClick={() => appendRecipient({amount: newRecipientAmount, address: newRecipientAddress})}
+            style={{display: 'block', margin: '0 1em'}}
+            size="md" >
+            + add
+          </Button>
+        </div>
+      </FormBox>
     </Container>
-  )
+  );
+};
+
+function Row({children}: {children: JSX.Element|Array<JSX.Element>}){
+  return(<div style={{padding: '0.5em 0'}}>{children}</div>)
 }
 
-export default SafeApp
+function RecipientRow({address, amount}:Recipient): JSX.Element {
+  return (<div key={`recipient-${address}`} style={{display: 'flex', alignItems: 'center', padding: '1em 0' }}>
+          <AddressInput
+            id={`recipient-${address}`}
+            name="stream recipient"
+            label="stream recipient"
+            address={address}
+            onChangeAddress={function(){/*noop*/}}
+            disabled
+          />
+          <TextFieldInput
+            id={`amount-${address}`}
+            name="lockTime"
+            label="lock time (days)"
+            type="number"
+            disabled
+            onChange={function(){/*noop*/}}
+            value={amount}
+            />
+        </div>)
+}
+
+export default SafeApp;
