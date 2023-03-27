@@ -1,22 +1,12 @@
 module.exports = {
+  env: { node: true },
+  extends: ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
   parser: "@typescript-eslint/parser",
-  extends: [
-    "plugin:@typescript-eslint/recommended",
-    "prettier",
-    "react-app",
-    "plugin:jsx-a11y/recommended",
-  ],
-  plugins: ["jsx-a11y"],
-  parserOptions: {
-    ecmaVersion: 2018,
-    sourceType: "module",
-  },
+  plugins: ["@typescript-eslint", "prettier", "mocha"],
   rules: {
-    "@typescript-eslint/camelcase": "off",
-    "@typescript-eslint/no-var-requires": "off",
-    "@typescript-eslint/no-unused-vars": [
-      "error",
-      { ignoreRestSiblings: true },
-    ],
+    "prettier/prettier": "error",
+    "mocha/no-skipped-tests": "error",
+    "mocha/no-exclusive-tests": "error",
   },
-}
+  root: true,
+};
